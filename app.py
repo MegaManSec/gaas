@@ -7,7 +7,7 @@ import shutil
 import subprocess
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 app = FastAPI(title="Gixy as a Service")
 
@@ -66,8 +66,9 @@ async def scan(scan_path: str, file: UploadFile = File(...)):
     lines = text.splitlines(keepends=True)
     cleaned = remove_blocks(lines)
 
+    scan_path += ".conf"
     temp_dir = tempfile.mkdtemp()
-    tmp_conf = os.path.join(temp_dir, f"{scan_path}.conf")
+    tmp_conf = os.path.join(temp_dir, scan_path)
     os.makedirs(os.path.dirname(tmp_conf), exist_ok=True)
     with open(tmp_conf, "w") as f:
         f.writelines(cleaned)
@@ -81,7 +82,7 @@ async def scan(scan_path: str, file: UploadFile = File(...)):
         )
         output = json.loads(proc.stdout)
         for item in output:
-            item['path'] = tmp_conf
+            item['path'] = scan_path
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail=proc.stderr or proc.stdout)
     except subprocess.TimeoutExpired:
